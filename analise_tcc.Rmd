@@ -1,0 +1,483 @@
+---
+title: "TCC"
+author: "Renato Souza Alves"
+#date: "09/09/2023"
+output: rmdformats::readthedown
+highlight: kate
+css: StyleClube.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+knitr::opts_knit$set(root.dir = "~/Desktop/Analises")
+```
+
+## Título TCC
+
+```{r include=FALSE}
+## Carregando Pacotes
+#remotes::install_github("juba/rmdformats",force=TRUE)
+#install.packages("forecast")
+#install.packages("writexl")
+#install.packages("xts")
+
+vetor_pacotes=c("readr",
+                "ggplot2",
+                "rmdformats",
+                "plotly",
+                "e1071",
+                "dplyr",
+                "Hmisc",
+                "DescTools",
+                "esquisse",
+                "kableExtra",
+                "gridExtra",
+                "e1071",
+                "devtools",
+                "readxl",
+                "rmarkdown",
+                "tidyr",
+                "forecast",
+                "readxl",
+                "zoo",
+                "lubridate",
+                "xts",
+                "writexl"
+      #          'tinytex',
+     #           "webshot",
+    #            "webshot2"
+)
+#install.packages(vetor_pacotes)
+
+lapply(vetor_pacotes, 
+       require, 
+       character.only = TRUE)
+
+
+
+```
+
+
+```{r include=FALSE}
+#A
+dados = read_excel("base_tcc2.xlsx")
+#dados_selic_real = read_excel("historico_selic.xlsx") 
+View(dados)
+#View(dados_selic_real)
+```
+
+
+```{r include=FALSE}
+
+sum(is.na(dados$SELIC))
+sum(is.na(dados$IPCA))
+sum(is.na(dados$PTAX))
+sum(is.infinite(dados$SELIC))
+sum(is.infinite(dados$IPCA))
+sum(is.infinite(dados$PTAX))
+
+#B -> Quantidade de Recuperaçoes Judiciais
+total_recjud = dados %>% dplyr::select("TOTAL")  
+#View(total_recjud)
+
+s = summary(total_recjud)
+s
+d = describe(total_recjud)
+d
+
+
+
+```
+
+
+```{r echo=FALSE}
+#B -> Gráfico de Linhas com a evolução do número de Pedidos de Rec Jud ao longo do tempo separado por setor
+
+par(pin=c(6,3))
+
+df_long <- gather(dados, key = "Categoria", value = "Valor", -MES)
+
+dados$MES <- as.Date(dados$MES, format="%Y-%m-%d") # Ajuste o format conforme o formato da sua data
+
+
+start_year <- as.numeric(format(min(dados$MES), "%Y"))
+end_year <- as.numeric(format(max(dados$MES), "%Y"))
+
+axis_points <- seq(as.Date(paste0(start_year,"-01-01")), as.Date(paste0(end_year,"-12-31")), by="1 year")
+axis_labels <- as.character(start_year:end_year)
+
+
+
+y_min <- floor(min(dados[,2:5]))
+y_max <- ceiling(max(dados[,2:5]) * 1.10)
+y_breaks <- seq(y_min, y_max, by=30)
+
+
+plot(dados$MES, dados$INDUSTRIA, type="l", col="red", ylim=c(y_min, y_max), 
+     xlab=" ", ylab=" ", main="Evolução Do número de Pedidos de Recuperação Judicial\n Por setor ao Longo do Tempo\n", xaxt="n", yaxt="n")
+
+lines(dados$MES, dados$SERVICOS, col="blue")
+lines(dados$MES, dados$PRIMARIO, col="dark green")
+#lines(dados$MES, dados$TOTAL, col="black")
+
+axis(1, at=axis_points, labels=axis_labels)
+axis(4, at=y_breaks, labels=y_breaks, las=2)
+
+
+legend("topleft", legend=c("Indústria", "Serviços", "Setor Primário"), 
+       col=c("red", "blue", "green"), lty=1, cex=0.8)
+
+
+```
+
+
+```{r echo=FALSE}
+
+
+par(pin=c(6,3))
+
+df_long <- gather(dados, key = "Categoria", value = "Valor", -MES)
+
+dados$MES <- as.Date(dados$MES, format="%Y-%m-%d") # Ajuste o format conforme o formato da sua data
+
+
+start_year <- as.numeric(format(min(dados$MES), "%Y"))
+end_year <- as.numeric(format(max(dados$MES), "%Y"))
+
+axis_points <- seq(as.Date(paste0(start_year,"-01-01")), as.Date(paste0(end_year,"-12-31")), by="1 year")
+axis_labels <- as.character(start_year:end_year)
+
+
+
+y_min <- floor(min(dados[,2:5]))
+y_max <- ceiling(max(dados[,2:5]) * 1.70)
+y_breaks <- seq(y_min, y_max, by=30)
+
+
+plot(dados$MES, dados$TOTAL, type="l", col="dark blue", ylim=c(y_min, y_max), 
+     xlab=" ", ylab=" ",  xaxt="n", yaxt="n")
+
+#lines(dados$MES, dados$SERVICOS, col="blue")
+#lines(dados$MES, dados$PRIMARIO, col="dark green")
+#lines(dados$MES, dados$TOTAL, col="black")
+
+axis(1, at=axis_points, labels=axis_labels)
+axis(4, at=y_breaks, labels=y_breaks, las=2)
+
+
+#legend("topleft", legend=c("Total"), 
+ #      col=c("black"), lty=1, cex=0.8)
+
+```
+
+```{r echo=FALSE}
+#C -> Gráfico de Linhas com a evolução dos indicadores macroeconomicos ao longo do tempo separado por setor
+
+
+par(pin=c(6,3))
+
+df_long <- gather(dados, key = "Categoria", value = "Valor", -MES)
+
+dados$MES <- as.Date(dados$MES, format="%Y-%m-%d") # Ajuste o format conforme o formato da sua data
+
+
+start_year <- as.numeric(format(min(dados$MES), "%Y"))
+end_year <- as.numeric(format(max(dados$MES), "%Y"))
+
+axis_points <- seq(as.Date(paste0(start_year,"-01-01")), as.Date(paste0(end_year,"-12-31")), by="1 year")
+axis_labels <- as.character(start_year:end_year)
+
+y_min <- floor(min(c(dados$SELIC, dados$IPCA, dados$PTAX)))
+y_max <- ceiling(max(c(dados$SELIC, dados$IPCA, dados$PTAX)))
+y_breaks <- seq(y_min, y_max)
+
+plot(dados$MES, dados$SELIC, type="l", col="red", ylim=c(y_min, y_max), 
+     xlab=" ", ylab=" ", main="Evolução Do número dos Indicadores Macroeconômicos \n ao Longo do Tempo\n", xaxt="n", yaxt="n")
+
+lines(dados$MES, dados$IPCA, col="blue")
+lines(dados$MES, dados$PTAX, col="dark green")
+
+axis(1, at=axis_points, labels=axis_labels)
+axis(4, at=y_breaks, labels=y_breaks, las=2)
+
+legend("topleft", legend=c("SELIC", "IPCA", "PTAX"), 
+       col=c("red", "blue", "green"), lty=1, cex=0.8)
+
+
+
+```
+
+
+
+
+```{r echo=FALSE}
+#C -> Gráfico de Linhas com a evolução dos indicadores macroeconomicos ao longo do tempo separado por setor
+
+cor_selic_total <- cor(dados$SELIC, dados$TOTAL)
+cor_ptax_total <- cor(dados$PTAX, dados$TOTAL)
+cor_ipca_total <- cor(dados$IPCA, dados$TOTAL)
+
+print(paste("Correlação entre SELIC e TOTAL:", round(cor_selic_total, 2)))
+print(paste("Correlação entre PTAX e TOTAL:", round(cor_ptax_total, 2)))
+print(paste("Correlação entre IPCA e TOTAL:", round(cor_ipca_total, 2)))
+
+
+
+
+
+
+```
+
+
+```{r echo=FALSE}
+#C -> 
+
+
+library(ggplot2)
+
+# SELIC vs TOTAL
+p1 <- ggplot(dados, aes(x=SELIC, y=TOTAL)) +
+  geom_point() +
+  geom_smooth(method="lm", se=FALSE, color="blue") +
+  labs(title="SELIC vs TOTAL")
+
+# PTAX vs TOTAL
+p2 <- ggplot(dados, aes(x=PTAX, y=TOTAL)) +
+  geom_point() +
+  geom_smooth(method="lm", se=FALSE, color="blue") +
+  labs(title="PTAX vs TOTAL")
+
+# IPCA vs TOTAL
+p3 <- ggplot(dados, aes(x=IPCA, y=TOTAL)) +
+  geom_point() +
+  geom_smooth(method="lm", se=FALSE, color="blue") +
+  labs(title="IPCA vs TOTAL")
+
+# Visualizar os gráficos
+p1
+p2
+p3
+
+
+
+
+```
+
+
+
+## Gráficos da análise descritiva para a variável Profissão dos Credores
+
+```{r echo=FALSE}
+# Observaçao sobre a correlação
+
+
+
+
+```
+
+
+## Gráficos da análise descritiva para a variável Profissão dos Credores (Barras)
+
+```{r echo=FALSE}
+
+#Exemplos que poderao ser descartados
+dados$MES <- as.Date(dados$MES, format="%Y-%m-%d")
+
+start_year <- as.numeric(format(min(dados$MES), "%Y"))
+end_year <- as.numeric(format(max(dados$MES), "%Y"))
+axis_points <- seq(as.Date(paste0(start_year,"-01-01")), as.Date(paste0(end_year,"-12-31")), by="1 year")
+axis_labels <- as.character(start_year:end_year)
+
+# Define o layout para três gráficos verticais
+layout(matrix(1:3, 3, 1))
+
+indicadores <- c("SELIC", "IPCA", "PTAX")
+
+# Loop para criar os gráficos
+for (ind in indicadores) {
+  # Escala dos indicadores econômicos
+  y_min_indicador <- floor(min(dados[[ind]]))
+  y_max_indicador <- ceiling(max(dados[[ind]]))
+  y_breaks_indicador <- seq(y_min_indicador, y_max_indicador)
+  
+  # Escala do TOTAL
+  y_min_total <- floor(min(dados$TOTAL))
+  y_max_total <- ceiling(max(dados$TOTAL))
+  y_breaks_total <- seq(y_min_total, y_max_total)
+
+  # Gráfico para os indicadores econômicos
+  plot(dados$MES, dados[[ind]], type="l", col="red", ylim=c(y_min_indicador, y_max_indicador),
+       xlab="", ylab=ind, main=paste("Evolução do", ind, "e TOTAL"), xaxt="n", yaxt="n")
+  
+  axis(1, at=axis_points, labels=axis_labels, las=2)
+  axis(2, at=y_breaks_indicador, labels=y_breaks_indicador, las=2)
+  
+  # Adiciona o TOTAL em uma segunda escala no eixo y direito
+  par(new=TRUE)
+  plot(dados$MES, dados$TOTAL, type="l", col="black", axes=FALSE, bty="n", xlab="", ylab="", ylim=c(y_min_total, y_max_total))
+  axis(4, at=y_breaks_total, labels=y_breaks_total, las=2)
+  mtext("TOTAL", side=4, line=3)
+  legend("topleft", legend=c(ind, "TOTAL"), col=c("red", "black"), lty=1, cex=0.8)
+}
+
+
+```
+
+
+##Gr
+
+```{r include=FALSE}
+
+#Dados SELIC REAL -> Transformando em mensal - resultado não foi tao bem quanto esperado correlacao mto fraco usando ARIMA
+
+#Tentativa por ARIMA
+#Usando o histórico da SELIC 
+
+
+#leitura de dados
+dados_selic = read_excel("historico_selic.xlsx") 
+
+dados_selic <- dados_selic[, c('Data', 'Meta SELIC')]
+dados_selic$Data <- as.Date(dados_selic$Data)
+
+dados_selic <- dados_selic[order(dados_selic$Data), ]
+
+ts_data <- ts(dados_selic$`Meta SELIC`, frequency = 365/45)
+
+modelo_arima <- auto.arima(ts_data)
+
+summary(modelo_arima)
+
+previsoes <- forecast(modelo_arima, h = 136)  # Ajuste 'h' conforme necessário
+
+data_inicio <- as.Date("2006-01-18") # substitua com a data de início relevante
+datas_finais_mes <- seq(data_inicio, by = "month", length.out = 136)
+
+previsoes_mensais <- data.frame(
+  Data = datas_finais_mes,
+  Previsao_SELIC = previsoes$mean
+)
+
+print(previsoes_mensais)
+View(previsoes_mensais)
+
+#plot(previsoes)
+
+ts_data <- ts(dados_selic$`Meta SELIC`, frequency = 365/45)
+length(ts_data)
+
+holt_model <- holt(ts_data)
+
+summary(holt_model)
+
+holt_forecast <- forecast(holt_model, h = 5) # Prever os próximos 5 períodos (aproximadamente os próximos 5*45 dias)
+plot(holt_forecast)
+View(holt_forecast)
+
+
+
+
+```
+
+
+
+```{r include=FALSE}
+
+#Transformando a SELIC diaria em mensal
+  
+dados_selic_d = read_excel("teste.xlsx") 
+View(dados_selic_d)
+
+#dados_selic_d <- as.Date(dados_selic_d$data)
+
+# Criar uma série temporal diária
+dados_ts <- xts(dados_selic_d$taxa, order.by = dados_selic_d$data)
+
+selic_mensal <- apply.monthly(dados_ts, mean, na.rm = TRUE)
+
+#print(selic_mensal)
+View(selic_mensal)
+
+selic_mensal_df <- as.data.frame(selic_mensal)
+
+selic_mensal_df$data <- row.names(selic_mensal_df)
+
+row.names(selic_mensal_df) <- NULL
+
+
+write_xlsx(selic_mensal_df, "~/Desktop/selic_mensal.xlsx")
+
+
+```
+
+## Profissão dos Devedores (Barras)
+
+```{r echo=FALSE}
+
+#Utilizar o indice IBC- Br no  lugar do PIB, conforme indicado no guia brasileiro de dados.
+
+
+```
+
+
+```{r include=FALSE}
+
+#Transformando a SELIC diaria em mensal levando em consideracao 252 dias uteis
+  
+dados_selic_v2 = read_excel("teste.xlsx") 
+#View(dados_selic_v2)
+
+dados_selic_v2$data <- as.Date(dados_selic_v2$data)
+
+dados_selic_v2 <- dados_selic_v2 %>% mutate(ano = year(data), mes = month(data))
+
+View(dados_selic_v2)
+
+
+selic_mensal2 <- dados_selic_v2 %>% 
+  group_by(ano, mes) %>% 
+  summarise(media_selic = mean(taxa, na.rm = TRUE))
+
+View(selic_mensal2)
+
+selic_mensal_df2 <- as.data.frame(selic_mensal)
+
+selic_mensal_df2$data <- row.names(selic_mensal_df2)
+
+row.names(selic_mensal_df2) <- NULL
+
+
+write_xlsx(selic_mensal_df2, "~/Desktop/selic_mensal2.xlsx")
+
+```
+
+
+## Testando Correlaçao
+
+```{r echo=FALSE}
+
+#Testando Correlacao
+
+dados1 <- read_excel("historico_selic.xlsx")
+
+# Supondo que você tenha duas colunas: 'meta_selic' e 'selic_mensal'
+correlacao <- cor(dados1$meta_selic, dados1$selic_v1, use = "complete.obs")
+
+correlacao2 <- cor(dados1$taxa_selic, dados1$selic_v1, use = "complete.obs")
+
+# Imprimir a correlação
+cor(dados1)
+
+
+  
+
+
+```
+
+
+
+
+
+
+
+
